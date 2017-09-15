@@ -6,12 +6,58 @@ import chainer.functions as F
 
 import net
 import imagepp as ip
+        
+# prepare dataset
+filenames_train = ['./img/asai',
+                   './img/harima',
+                   './img/homma',
+                   './img/inagaki',
+                   './img/kurosu',
+                   './img/maeda',
+                   './img/michieda',
+                   './img/muto',
+                   './img/nagatomo',
+                   './img/noguchi',
+                   './img/sato',
+                   './img/shoji',
+                   './img/suzuki',
+                   './img/taguchi',
+                   './img/taya',
+                   './img/umemoto',
+                   './img/yamane',
+                   './img/yamauchi',
+                   './img/yasuda',
+                   './img/none'
+                   ]
 
+filenames_test = ['./img/asai',
+                   './img/harima',
+                   './img/homma',
+                   './img/inagaki',
+                   './img/kurosu',
+                   './img/maeda',
+                   './img/michieda',
+                   './img/muto',
+                   './img/nagatomo',
+                   './img/noguchi',
+                   './img/sato',
+                   './img/shoji',
+                   './img/suzuki',
+                   './img/taguchi',
+                   './img/taya',
+                   './img/umemoto',
+                   './img/yamane',
+                   './img/yamauchi',
+                   './img/yasuda',
+                   #'./img/none'
+                   './img/tmp'
+				   ]
+        
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: MNIST')
     parser.add_argument('--batchsize', '-b', type=int, default=32,
                         help='Number of images in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=30,
+    parser.add_argument('--epoch', '-e', type=int, default=1,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
@@ -20,6 +66,9 @@ def main():
     parser.add_argument('--resume', '-r', type=int, default=-1,
                         help='If positive, resume the training from snapshot')
     
+    parser.add_argument('--num', '-n', type=int, default=0,
+                        help='If positive, resume the training from snapshot')
+        
     args = parser.parse_args()
     
     print('GPU: {}'.format(args.gpu))
@@ -31,6 +80,8 @@ def main():
     n_epoch = args.epoch if flag_train == True else 1
     
     tsm = MTModel(args.gpu, flag_train, flag_resum, n_epoch, args.batchsize)
+    
+    tsm.makeitrdata(args.num)
     tsm.run()
     
 class MTModel():
@@ -39,6 +90,7 @@ class MTModel():
         self.flag_train = flag_train
         self.flag_resum = flag_resum
         self.gpu = gpu
+        self.batchsize = batchsize
         self.Ncat = 20
         
         self.model = net.MTNNet(n_out=self.Ncat)
@@ -58,64 +110,22 @@ class MTModel():
                 print('successfully resume model')
             except:
                 print('ERROR: cannot resume model')
+
+         
+        self.imp = ip.ImagePP(self.gpu)
         
-        # prepare dataset
-        filenames_train = ['./img/asai',
-                           './img/harima',
-                           './img/homma',
-                           './img/inagaki',
-                           './img/kurosu',
-                           './img/maeda',
-                           './img/michieda',
-                           './img/muto',
-                           './img/nagatomo',
-                           './img/noguchi',
-                           './img/sato',
-                           './img/shoji',
-                           './img/suzuki',
-                           './img/taguchi',
-                           './img/taya',
-                           './img/umemoto',
-                           './img/yamane',
-                           './img/yamauchi',
-                           './img/yasuda',
-                           './img/none'
-                           ]
-        
-        filenames_test = ['./img/asai',
-                           './img/harima',
-                           './img/homma',
-                           './img/inagaki',
-                           './img/kurosu',
-                           './img/maeda',
-                           './img/michieda',
-                           './img/muto',
-                           './img/nagatomo',
-                           './img/noguchi',
-                           './img/sato',
-                           './img/shoji',
-                           './img/suzuki',
-                           './img/taguchi',
-                           './img/taya',
-                           './img/umemoto',
-                           './img/yamane',
-                           './img/yamauchi',
-                           './img/yasuda',
-                           './img/none'
-                           ]
-        
-        imp = ip.ImagePP(self.gpu)
-        train, _ = imp.makedataset(filenames_train, self.Ncat, train=True)
-        test, self.fnames = imp.makedataset(filenames_test, self.Ncat, train=False)
+    def makeitrdata(self, daid):
+        train, _ = self.imp.makedataset(filenames_train, self.Ncat, daid, train=True)
+        test, self.fnames = self.imp.makedataset(filenames_test, self.Ncat, 0, train=False)
         
         self.N_train = len(train)
         self.N_test = len(test)
         
-        self.train_iter = chainer.iterators.SerialIterator(train, batchsize,
+        self.train_iter = chainer.iterators.SerialIterator(train, self.batchsize,
                                                            repeat=True, shuffle=True)
         self.test_iter = chainer.iterators.SerialIterator(test, 1,
                                                           repeat=False, shuffle=False)
-        
+    
     def run(self):
         sum_accuracy = 0
         sum_loss = 0

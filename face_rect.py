@@ -1,5 +1,6 @@
 import glob
 import os
+import shutil
 import cv2
 
 import numpy as np
@@ -9,24 +10,24 @@ import net
 
 NAMES={
 'asai':0,
-'inagaki':1,
-'umemoto':2,
-'kurosu':3,
-'sato':4,
-'shoji':5,
-'suzuki':6,
-'taguchi':7,
-'taya':8,
-'nagatomo':9,
-'noguchi':10,
-'harima':11,
-'homma':12,
-'maeda':13,
-'michieda':14,
-'muto':15,
-'yasuda':16,
+'harima':1,
+'homma':2,
+'inagaki':3,
+'kurosu':4,
+'maeda':5,
+'michieda':6,
+'muto':7,
+'nagatomo':8,
+'noguchi':9,
+'sato':10,
+'shoji':11,
+'suzuki':12,
+'taguchi':13,
+'taya':14,
+'umemoto':15,
+'yamane':16,
 'yamauchi':17,
-'yamane':18,
+'yasuda':18,
 'none':19
 }
 
@@ -48,39 +49,46 @@ class MTClass():
         self.namedict = {v:k for k, v in NAMES.items()}
     
     def inference(self, face):
+        #img = cv2.imread(face)
         img = np.asarray(face/255.0, dtype=np.float32).transpose(2,0,1).reshape((1,3,224,224))
-        f = model(img)
+        with chainer.using_config('train', False), chainer.no_backprop_mode():
+            f = model(img)
         result = int(F.argmax(f).data)
         name = self.namedict[result]
         return name
-    
+		
+    def run_cor(self):
+        files = glob.glob('./img/tmp/*')
+        for file in files:
+            name_key = self.inference(file)
+            shutil.move(file, './img/' + name_key)
+	
     def run(self):
-        for name in NAMES:
-            self.folderName = os.getcwd() + '/tmp/'
-            if os.path.exists(self.folderName)==False:
-                os.mkdir(self.folderName)
+        #for name in NAMES:
+            #if os.path.exists(self.folderName)==False:
+            #    os.mkdir(self.folderName)
             
-            self.count = 0
-            
-            files = glob.glob('data/' + name + '/*.jpg')
-            for file in files:
-                print(file)
-                img = cv2.imread(file)
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)    
-                faces = self.cascade.detectMultiScale(gray
-                                                      ,scaleFactor=1.8
-                                                      ,minNeighbors=1
-                                                      ,minSize=(24,24)
-                                                      )
-                
-                if len(faces) > 0:
-                    for rect in faces:
-                        dst_img = img[rect[1]:rect[1]+rect[3],rect[0]:rect[0]+rect[2]]
-                        dst_img = cv2.resize(dst_img, (224,224))
-                        name_key = self.inference(dst_img)
-                        fname = self.folderName + name_key + '/face' + str(self.count) + '.jpg' 
-                        cv2.imwrite(fname, dst_img)
-                        self.count += 1
+		self.count = 0
+		
+		files = glob.glob('data/*.jpg')
+		for file in files:
+			print(file)
+			img = cv2.imread(file)
+			gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)    
+			faces = self.cascade.detectMultiScale(gray
+												  ,scaleFactor=1.8
+												  ,minNeighbors=1
+												  ,minSize=(24,24)
+												  )
+			
+			if len(faces) > 0:
+				for rect in faces:
+					dst_img = img[rect[1]:rect[1]+rect[3],rect[0]:rect[0]+rect[2]]
+					dst_img = cv2.resize(dst_img, (224,224))
+					name_key = self.inference(dst_img)
+					fname = './tmp/facetmp' + str(self.count) + '.jpg' 
+					cv2.imwrite(fname, dst_img)
+					self.count += 1
     
 if __name__ == '__main__':
     main()

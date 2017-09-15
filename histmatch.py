@@ -44,10 +44,10 @@ class FaceMatch():
             files = glob.glob(dirname + '/*.jpg')
             for file1, file2 in list(itertools.combinations(files,2)):
                 ret = self.CompFace(file1, file2)
-                if ret > 0.99:
-                    print(file1, file2)
-                    if os.path.exists(file2):
-                        os.remove(file2)
+                if ret > 0.9999999999:
+                    print(file1, file2, ret)
+                    #if os.path.exists(file2):
+                    #    os.remove(file2)
                     
     def CompFace(self, base, target):
         base_img = cv2.imread(base)

@@ -10,21 +10,22 @@ class ImagePP():
     def __init__(self, gpu):
         self.xp = np if gpu < 0 else chainer.cuda.cupy
         
-    def makedataset(self, filenames, cat, train=True):
+    def makedataset(self, filenames, cat, daid, train=True):
         xp = self.xp
         N_dataset = 0
         
-        for f in filenames:
+        for (i, f) in enumerate(filenames):
             files = glob.glob(f + '/*.jpg')
             for file in files:
-                N_dataset += 1
+                countup = 18 if i==daid and train else 18
+                N_dataset += countup
                 
         dx = 224
         dy = 224
-        n_da = 18 if train else 1
+        #n_da = 18 if train else 1
         
-        df = xp.empty((N_dataset*n_da,3,dy,dx), dtype=xp.float32)
-        label = xp.zeros((N_dataset*n_da), dtype=xp.int32)
+        df = xp.empty((N_dataset,3,dy,dx), dtype=xp.float32)
+        label = xp.zeros((N_dataset), dtype=xp.int32)
         fnames = []
         
         count = 0
@@ -41,7 +42,7 @@ class ImagePP():
             for file in files:
                 print(file)
                 fnames.append(file)
-                if train:
+                if i == daid and train:
                     imgs = ag.aug(file)
                     for img in imgs:
                         add(count, i, img)
